@@ -1,0 +1,49 @@
+{
+  "name": "aegis-ai-antivirus",
+  "version": "1.0.0",
+  "description": "Antivirus inteligente con conexion a IAs (OpenAI, Gemini, Claude, Perplexity), monitorizacion en tiempo real, escaner de amenazas, firewall y cuarentena. Instalable en cualquier PC con Windows.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist": "electron-builder --win"
+  },
+  "author": "Christian Freelance (https://christian-freelance.us/)",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.chrishb2000.aegis-antivirus",
+    "productName": "Aegis AI Antivirus",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Aegis AI Antivirus",
+      "runAfterFinish": true
+    }
+  }
+}

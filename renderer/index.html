@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'">
+  <title>Aegis AI Antivirus</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">&#x2694;&#xFE0F;</div>
+      <div>
+        <div class="brand-name">Aegis AI Antivirus</div>
+        <div class="brand-sub">Seguridad inteligente con Inteligencia Artificial</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div id="statusPill" class="status-pill">
+        <span class="dot"></span><span id="statusText">Verificando...</span>
+      </div>
+      <label class="theme-switch" title="Cambiar tema">
+        <input type="checkbox" id="themeToggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-ico">&#x1F4C8;</span> Panel Principal</button>
+        <button class="nav-item" data-view="realtime"><span class="nav-ico">&#x1F3AF;</span> Protección en Vivo</button>
+        <button class="nav-item" data-view="scanner"><span class="nav-ico">&#x1F50D;</span> Escáner</button>
+        <button class="nav-item" data-view="quarantine"><span class="nav-ico">&#x1F512;</span> Cuarentena</button>
+        <button class="nav-item" data-view="firewall"><span class="nav-ico">&#x1F6E1;&#xFE0F;</span> Firewall y Puertos</button>
+        <button class="nav-item" data-view="ai"><span class="nav-ico">&#x1F9E0;</span> IA de Análisis</button>
+        <button class="nav-item" data-view="settings"><span class="nav-ico">&#x2699;&#xFE0F;</span> Ajustes</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div id="adminBadge" class="admin-badge">&#x1F6A8; Sin permisos admin</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- PANEL -->
+      <section class="view active" id="view-dashboard">
+        <h1 class="view-title">Panel de Seguridad</h1>
+        <div class="grid-stats">
+          <div class="stat-card"><div class="stat-ico">&#x1F4A1;</div><div class="stat-val" id="statCpu">--</div><div class="stat-lbl">Uso de CPU</div></div>
+          <div class="stat-card"><div class="stat-ico">&#x1F5A5;&#xFE0F;</div><div class="stat-val" id="statMem">--</div><div class="stat-lbl">Memoria RAM</div></div>
+          <div class="stat-card"><div class="stat-ico">&#x1F4BB;</div><div class="stat-val" id="statProcs">--</div><div class="stat-lbl">Procesos activos</div></div>
+          <div class="stat-card"><div class="stat-ico">&#x1F310;</div><div class="stat-val" id="statConns">--</div><div class="stat-lbl">Conexiones de red</div></div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head"><h2>Estado de Protección</h2><span class="badge" id="protState">Activa</span></div>
+            <div class="prot-list">
+              <div class="prot-row"><span>Protección en tiempo real</span><span id="rtRow" class="ok-text">ON</span></div>
+              <div class="prot-row"><span>Carpetas vigiladas</span><span id="watchedCount">0</span></div>
+              <div class="prot-row"><span>IA conectada</span><span id="aiRowStatus">--</span></div>
+              <div class="prot-row"><span>Firewall de Windows</span><span id="fwRowStatus">--</span></div>
+              <div class="prot-row"><span>Amenazas detectadas</span><span id="threatCount">0</span></div>
+            </div>
+            <div class="card-actions">
+              <button class="btn primary" id="btnQuickScan">&#x1F50D; Escaneo rápido</button>
+              <button class="btn" id="btnFullScan">Escaneo completo</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Discos</h2><span class="badge" id="diskCount">0</span></div>
+            <div id="diskList" class="disk-list"></div>
+            <div class="card-head" style="margin-top:18px"><h2>Últimas alertas</h2></div>
+            <div id="recentThreats" class="recent-threats"><div class="muted">Sin alertas recientes</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TIEMPO REAL -->
+      <section class="view" id="view-realtime">
+        <h1 class="view-title">Protección en Tiempo Real</h1>
+        <div class="card">
+          <div class="card-head">
+            <h2>Procesos del sistema</h2>
+            <button class="btn small" id="btnProcsRefresh">Actualizar</button>
+          </div>
+          <div class="table-wrap">
+            <table class="grid-table">
+              <thead><tr><th>PID</th><th>Proceso</th><th>Memoria</th><th>Riesgo</th></tr></thead>
+              <tbody id="procTable"></tbody>
+            </table>
+          </div>
+          <div class="muted small">Se evalúa comportamiento: ejecutables en Temp/Startup, shells ofuscadas, mineros, keyloggers y RATs.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Conexiones de red activas</h2><button class="btn small" id="btnConnsRefresh">Actualizar</button></div>
+          <div class="table-wrap">
+            <table class="grid-table">
+              <thead><tr><th>Local</th><th>Remoto</th><th>Puerto</th><th>Proceso (PID)</th><th>Riesgo</th><th>Acción</th></tr></thead>
+              <tbody id="connTable"></tbody>
+            </table>
+          </div>
+          <div class="muted small">Los puertos de alto riesgo (4444, 1337, 31337, 6667...) se marcan automáticamente. Puedes bloquear IPs y programas.</div>
+        </div>
+      </section>
+
+      <!-- ESCANER -->
+      <section class="view" id="view-scanner">
+        <h1 class="view-title">Escáner de Amenazas</h1>
+        <div class="card">
+          <div class="card-head"><h2>Análisis del equipo</h2><span class="badge" id="scanState">Inactivo</span></div>
+          <div class="scan-actions">
+            <button class="btn primary" id="scanQuick">Escaneo Rápido</button>
+            <button class="btn" id="scanFull">Escaneo Completo</button>
+            <button class="btn" id="scanCustom">Elegir Carpeta...</button>
+            <button class="btn danger" id="scanStop" disabled>Detener</button>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="scanProgressBar"></div></div>
+            <div class="progress-info" id="scanProgressInfo">Sin escaneos en curso</div>
+          </div>
+          <div class="muted">Archivos analizados: <b id="scanFiles">0</b> &nbsp;|&nbsp; Amenazas: <b id="scanThreatsFound">0</b></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Resultados del último escaneo</h2></div>
+          <div id="scanResults" class="scan-results"><div class="muted">Ejecuta un escaneo para ver resultados.</div></div>
+        </div>
+      </section>
+
+      <!-- CUARENTENA -->
+      <section class="view" id="view-quarantine">
+        <h1 class="view-title">Cuarentena</h1>
+        <div class="card">
+          <div class="card-head"><h2>Archivos aislados</h2><button class="btn small" id="btnQuarRefresh">Actualizar</button></div>
+          <div id="quarantineList" class="min-list"><div class="muted">La cuarentena está vacía.</div></div>
+        </div>
+      </section>
+
+      <!-- FIREWALL -->
+      <section class="view" id="view-firewall">
+        <h1 class="view-title">Firewall y puertos</h1>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head"><h2>Firewall de Windows</h2><span class="badge" id="fwStatus">--</span></div>
+            <div class="card-actions">
+              <button class="btn primary" id="btnFwOn">Activar firewall</button>
+              <button class="btn danger" id="btnFwOff">Desactivar firewall</button>
+            </div>
+            <div class="muted small" id="fwAdminNote"></div>
+            <div class="card-head" style="margin-top:18px"><h2>Crear regla Aegis</h2></div>
+            <div class="form">
+              <div class="form-row">
+                <label>Nombre</label><input id="ruleName" placeholder="p.ej. Bloquear puerto 4444" />
+              </div>
+              <div class="form-row">
+                <label>Dirección</label>
+                <select id="ruleDir"><option value="in">Entrante</option><option value="out">Saliente</option></select>
+              </div>
+              <div class="form-row">
+                <label>Acción</label>
+                <select id="ruleAction"><option value="allow">Permitir</option><option value="block">Bloquear</option></select>
+              </div>
+              <div class="form-row">
+                <label>Protocolo</label>
+                <select id="ruleProtocol"><option value="TCP">TCP</option><option value="UDP">UDP</option><option value="any">Cualquiera</option></select>
+              </div>
+              <div class="form-row">
+                <label>Puerto (local)</label><input id="rulePort" placeholder="p.ej. 4444 (dejar vacío = todos)" />
+              </div>
+              <div class="form-row">
+                <label>IP remota</label><input id="ruleIp" placeholder="p.ej. 185.220.101.4 (opcional)" />
+              </div>
+              <div class="form-row">
+                <label>Programa</label><input id="ruleProgram" placeholder="Ruta del .exe (opcional)" />
+              </div>
+              <button class="btn primary" id="btnRuleAdd">Añadir regla</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Reglas creadas por Aegis</h2><button class="btn small" id="btnRulesRefresh">Actualizar</button></div>
+            <div id="ruleList" class="min-list"><div class="muted">Sin reglas AEGIS.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- IA -->
+      <section class="view" id="view-ai">
+        <h1 class="view-title">Inteligencia Artificial de Análisis</h1>
+        <div class="card">
+          <div class="card-head"><h2>Proveedor de IA</h2><span class="badge" id="aiConnected">No conectada</span></div>
+          <div class="form">
+            <div class="form-row">
+              <label>Proveedor</label>
+              <select id="aiProvider"></select>
+            </div>
+            <div class="form-row">
+              <label>Modelo (opcional)</label>
+              <input id="aiModel" placeholder="Dejar vacío = modelo recomendado" />
+              <div class="muted small" id="aiModelHint"></div>
+            </div>
+            <div class="form-row">
+              <label>API Key</label>
+              <input id="aiKey" type="password" placeholder="Pega aquí tu clave de API" />
+              <div class="muted small">La clave se guarda solo en este equipo (data\config.json). Consíguela en el panel del proveedor.</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn primary" id="btnAiTest">Probar conexión con la IA</button>
+              <button class="btn" id="btnAiSave">Guardar</button>
+            </div>
+            <div id="aiTestResult" class="ai-result"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Analizar un archivo con IA</h2></div>
+          <p class="muted">Selecciona un archivo sospechoso (descarga, ejecutable, documento) y la IA generará un veredicto: malware, sospechoso o benigno, con recomendación automática.</p>
+          <div class="card-actions">
+            <button class="btn primary" id="btnAiAnalyzeFile">Analizar archivo con IA</button>
+          </div>
+          <div id="aiAnalysisResult" class="ai-result"></div>
+        </div>
+      </section>
+
+      <!-- AJUSTES -->
+      <section class="view" id="view-settings">
+        <h1 class="view-title">Ajustes</h1>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head"><h2>Protección</h2></div>
+            <div class="toggle-row"><span>Protección en tiempo real</span><label class="sw"><input type="checkbox" id="cfgRealtime" /><span class="sw-slider"></span></label></div>
+            <div class="toggle-row"><span>Cuarentena automática de amenazas</span><label class="sw"><input type="checkbox" id="cfgAutoQ" /><span class="sw-slider"></span></label></div>
+            <div class="toggle-row"><span>Bloqueo automático de conexiones peligrosas</span><label class="sw"><input type="checkbox" id="cfgAutoBlock" /><span class="sw-slider"></span></label></div>
+            <div class="toggle-row"><span>Análisis de correos (eml/msg)</span><label class="sw"><input type="checkbox" id="cfgEmailScan" /><span class="sw-slider"></span></label></div>
+            <div class="toggle-row"><span>Notificaciones del sistema</span><label class="sw"><input type="checkbox" id="cfgNotify" /><span class="sw-slider"></span></label></div>
+            <div class="toggle-row"><span>Conectar con IA para análisis profundo</span><label class="sw"><input type="checkbox" id="cfgAiEnabled" /><span class="sw-slider"></span></label></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h2>Reputación en la nube</h2></div>
+            <div class="muted small">Opcional. Añade tu clave gratuita de VirusTotal para comprobar archivos contra más de 70 motores en Internet.</div>
+            <div class="form-row">
+              <label>VirusTotal API Key</label>
+              <input type="password" id="cfgVtKey" placeholder="Clave (opcional)" />
+            </div>
+            <div class="card-head" style="margin-top:18px"><h2>Permisos</h2></div>
+            <div id="adminSection"></div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-head"><h2>Exclusiones</h2><button class="btn small" id="btnAddExclusion">Añadir carpeta excluida</button></div>
+            <div class="muted small">Las carpetas o archivos excluidos no se escanean ni vigilan.</div>
+            <div id="exclusionList" class="min-list"></div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-head"><h2>Carpetas vigiladas</h2><button class="btn small" id="btnAddWatched">Añadir carpeta</button></div>
+            <div class="muted small">Por defecto se vigila la carpeta Descargas más las que agregues.</div>
+            <div id="watchedList" class="min-list"></div>
+          </div>
+
+          <div class="card wide">
+            <div class="card-head"><h2>Extensiones analizadas</h2></div>
+            <div class="muted small">Solo se escanean en profundidad estas extensiones consideradas de riesgo.</div>
+            <div id="extList" class="tag-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>Aegis AI Antivirus</span>
+    <span>Desarrollado por <a href="https://christian-freelance.us/" target="_blank">Christian Freelance</a></span>
+    <span><a href="https://www.paypal.com/donate/?hosted_button_id=YC6YAWBQ7HNSS" target="_blank">Invítame a un café</a></span>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/realtime.js"></script>
+  <script src="js/views/scanner.js"></script>
+  <script src="js/views/quarantine.js"></script>
+  <script src="js/views/firewall.js"></script>
+  <script src="js/views/ai.js"></script>
+  <script src="js/views/settings.js"></script>
+</body>
+</html>
