@@ -71,6 +71,7 @@ Los datos (configuración, cuarentena, historial) se guardan automáticamente:
 | **Cuarentena** | Aísla archivos maliciosos, restáuralos o elimínalos |
 | **Firewall y puertos** | Estado del firewall de Windows, activar/desactivar, **abrir o bloquear puertos**, bloquear programas o IPs concretas por reglas propias `AEGIS` |
 | **IA de análisis** | Conecta OpenAI, Gemini, Claude o Perplexity. Analiza cualquier archivo sospechoso y muestra veredicto, confianza, motivos y recomendación |
+| **Automatización** | Programador de tareas de mantenimiento: escaneo rápido/completo, limpieza de temporales, auditorías de red/arranque/firewall, limpieza de cuarentena, backup de config, integridad del sistema y reporte semanal. Activa/desactiva cada tarea, "Ejecutar ahora" o crea tareas personalizadas con expresión cron o intervalo |
 | **Ajustes** | **Excepciones** (carpetas excluidas), carpetas vigiladas, cuarentena/bloqueo automático, notificaciones, clave VirusTotal, permisos de administrador |
 | **Bandeja del sistema** | Icono de escudo junto al volumen/wifi: menú con escaneo rápido, cuarentena, protección on/off, configurar IA y salir. Se oculta a la bandeja al pulsar "X" |
 | **Estética** | **Tema claro y tema oscuro** (interruptor ☾/☀ en la barra superior), ventana maximizada, sin menús nativos |
@@ -139,7 +140,7 @@ antivirus/
 │   ├── engine/              → Firmas, comportamiento, escáner, cuarentena
 │   ├── ai/                  → Gestor multi-IA (OpenAI, Gemini, Claude, Perplexity)
 │   ├── network/             → Firewall (netsh) y bloqueo de IPs/programas
-│   ├── services/            → Config, logs, historial de amenazas
+│   ├── services/            → Config, logs, historial de amenazas, scheduler (automatización)
 │   └── utils/               → PowerShell, hashing, permisos admin
 ├── renderer/                → Interfaz (HTML/CSS/JS) con tema claro y oscuro
 └── data/                    → Config, cuarentena, historial (se crea al primer uso)

@@ -35,6 +35,7 @@
         <button class="nav-item" data-view="quarantine"><span class="nav-ico">&#x1F512;</span> Cuarentena</button>
         <button class="nav-item" data-view="firewall"><span class="nav-ico">&#x1F6E1;&#xFE0F;</span> Firewall y Puertos</button>
         <button class="nav-item" data-view="ai"><span class="nav-ico">&#x1F9E0;</span> IA de Análisis</button>
+        <button class="nav-item" data-view="scheduler"><span class="nav-ico">&#x23F0;</span> Automatización</button>
         <button class="nav-item" data-view="settings"><span class="nav-ico">&#x2699;&#xFE0F;</span> Ajustes</button>
       </nav>
       <div class="sidebar-foot">
@@ -225,6 +226,54 @@
         </div>
       </section>
 
+      <!-- AUTOMATIZACION -->
+      <section class="view" id="view-scheduler">
+        <h1 class="view-title">Automatización de Mantenimiento</h1>
+        <p class="muted">Programa tareas de escaneo, limpieza y auditoría para que el antivirus trabaje solo en segundo plano, sin tu intervención.</p>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Tareas programadas</h2>
+            <span class="badge" id="schedEnabledCount">0 activas</span>
+          </div>
+          <div class="muted small">Activa o desactiva cada tarea con su interruptor y pulsa "Ejecutar ahora" para lanzarla al instante. El motor revisa la agenda cada minuto.</div>
+          <div id="schedTaskList" class="sched-list"><div class="muted">Cargando...</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Crear tarea personalizada</h2></div>
+          <div class="form">
+            <div class="form-row">
+              <label>Nombre</label><input id="schedName" placeholder="p.ej. Escaneo de mi carpeta de trabajo" />
+            </div>
+            <div class="form-row">
+              <label>Función a ejecutar</label>
+              <select id="schedFunction"></select>
+              <div class="muted small" id="schedFuncHint"></div>
+            </div>
+            <div class="form-row">
+              <label>Tipo de horario</label>
+              <select id="schedType">
+                <option value="cron">Expresión cron (avanzado)</option>
+                <option value="interval">Cada cierto tiempo</option>
+              </select>
+            </div>
+            <div class="form-row" id="rowCronExpr">
+              <label>Expresión cron (5 campos)</label>
+              <input id="schedCron" placeholder="min hora dia mes dia-semana  |  p.ej. 0 12 * * *" />
+              <div class="muted small">min(0-59) hora(0-23) dia(1-31) mes(1-12) dia-semana(0-6, domingo=0). P.ej. <b>0 2 * * 1</b> = lunes a las 2:00.</div>
+            </div>
+            <div class="form-row" id="rowInterval" style="display:none">
+              <label>Intervalo (horas)</label>
+              <input id="schedInterval" type="number" min="1" placeholder="p.ej. 12" />
+            </div>
+            <div class="card-actions">
+              <button class="btn primary" id="btnSchedAdd">Crear tarea</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- AJUSTES -->
       <section class="view" id="view-settings">
         <h1 class="view-title">Ajustes</h1>
@@ -285,6 +334,7 @@
   <script src="js/views/quarantine.js"></script>
   <script src="js/views/firewall.js"></script>
   <script src="js/views/ai.js"></script>
+  <script src="js/views/scheduler.js"></script>
   <script src="js/views/settings.js"></script>
 </body>
 </html>

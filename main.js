@@ -16,6 +16,7 @@ const RealtimeMonitor = require("./src/monitor/realtime-monitor");
 const ProcessMonitor = require("./src/monitor/process-monitor");
 const NetworkMonitor = require("./src/monitor/network-monitor");
 const SystemMonitor = require("./src/monitor/system-monitor");
+const Scheduler = require("./src/services/scheduler");
 const { isAdmin, elevate } = require("./src/utils/admin");
 const { runPowerShell } = require("./src/utils/ps");
 
@@ -286,6 +287,9 @@ function buildEngine() {
   const realtime = new RealtimeMonitor(engine);
   engine.realtime = realtime;
   engine.runtime.threatsDetected = 0;
+
+  engine.scheduler = new Scheduler(DATA_DIR, engine);
+
   return { engine, realtime };
 }
 
@@ -479,6 +483,19 @@ function registerIpc() {
     return { ok: true, action: "already-gone" };
   });
 
+  // --- Scheduler / Automatizacion ---
+  ipcMain.handle("scheduler:list", () => engine.scheduler.list());
+  ipcMain.handle("scheduler:functions", () => engine.scheduler.getFunctions());
+  ipcMain.handle("scheduler:toggle", (e, taskId, enabled) => engine.scheduler.toggle(taskId, enabled));
+  ipcMain.handle("scheduler:runNow", async (e, taskId) => {
+    const r = await engine.scheduler.runNow(taskId);
+    rebuildTrayMenu();
+    return r;
+  });
+  ipcMain.handle("scheduler:add", (e, data) => engine.scheduler.add(data));
+  ipcMain.handle("scheduler:remove", (e, taskId) => engine.scheduler.remove(taskId));
+  ipcMain.handle("scheduler:history", (e, taskId) => engine.scheduler.getHistory(taskId));
+
   ipcMain.handle("logs:list", (e, limit) => engine.logger.list(limit || 200));
   ipcMain.handle("runtime:status", () => ({
     realtime: engine.realtime.isRunning(),
@@ -508,6 +525,7 @@ app.whenReady().then(() => {
   if (engine.config.get().realtime) {
     engine.realtime.start();
   }
+  engine.scheduler.start();
   registerIpc();
   createWindow();
   createTray();
@@ -526,7 +544,10 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("before-quit", () => { isQuitting = true; });
+app.on("before-quit", () => {
+  isQuitting = true;
+  if (engine && engine.scheduler) engine.scheduler.stop();
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
