@@ -5,7 +5,7 @@ const sig = require("./signatures");
 
 const SUSPICIOUS_CMD_TOKENS = [
   "-enc", "frombase64string", "downloadstring", "iwr http", "invoke-webrequest http",
-  "wget http", "curl http", "cmd.exe /c", "powershell -nop", "-hidden",
+  "wget http", "curl http", "powershell -nop", "-hidden",
   "reg add", "sc create", "net user", "netsh firewall add"
 ];
 
@@ -53,11 +53,11 @@ function getFlags(proc) {
     }
     for (const t of SUSPICIOUS_CMD_TOKENS) {
       if (cmd.includes(t)) {
-        flags.push({ risk: "medium", label: "Linea de comando sospechosa", detail: t });
+        flags.push({ risk: "medium", label: "Línea de comando sospechosa", detail: t });
       }
     }
     if (cmd.includes("admin") && cmd.includes("net user")) {
-      flags.push({ risk: "high", label: "Modificacion de usuarios del sistema", detail: cmd.slice(0, 160) });
+      flags.push({ risk: "high", label: "Modificación de usuarios del sistema", detail: cmd.slice(0, 160) });
     }
   }
 

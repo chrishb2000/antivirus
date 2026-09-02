@@ -9,7 +9,6 @@ function sanitize(name) {
 
 class Firewall {
   async status() {
-    // Devuelve estado de perfiles
     const out = await runNetsh(["advfirewall", "show", "allprofiles", "state"]);
     if (!out.ok) return { ok: false, error: out.error };
     const active = /ON/i.test(out.output) !== /OFF/i.test(out.output) ? /ON/i.test(out.output) : null;
@@ -37,7 +36,7 @@ class Firewall {
     const args = ["advfirewall", "firewall", "add", "rule", `name=${PREFIX}-${sanitize(name)}`, `dir=${dir}`, `action=${action}`, `protocol=${protocol}`];
     if (localport) args.push(`localport=${localport}`);
     if (remoteip) args.push(`remoteip=${remoteip}`);
-    if (program) args.push(`program=${program}`);
+    if (program) args.push(`program="${program}"`);
     return runNetsh(args);
   }
 
@@ -50,7 +49,6 @@ class Firewall {
   }
 
   async list() {
-    // Lista reglas creadas por Aegis (idioma independiente)
     const script =
       "Get-NetFirewallRule | Where-Object { $_.DisplayName -like 'AEGIS*' } | Select-Object DisplayName,Enabled,Direction,Action,@{N='Program';E={($_.Program | Where-Object {$_.Enabled}).Program}},@{N='Ports';E={($_.PortFilter | Where-Object {$_.Enabled}).LocalPort}},@{N='Protocol';E={($_.PortFilter | Where-Object {$_.Enabled}).Protocol}} | ConvertTo-Json -Compress";
     const out = await runPowerShell(script, 20000);

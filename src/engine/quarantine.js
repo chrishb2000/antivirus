@@ -2,6 +2,16 @@
 const fs = require("fs");
 const path = require("path");
 
+const XOR_KEY = 0x5A;
+
+function xorBuffer(buffer) {
+  const result = Buffer.alloc(buffer.length);
+  for (let i = 0; i < buffer.length; i++) {
+    result[i] = buffer[i] ^ XOR_KEY;
+  }
+  return result;
+}
+
 class Quarantine {
   constructor(dataDir) {
     this.qDir = path.join(dataDir, "quarantine");
@@ -9,7 +19,7 @@ class Quarantine {
     this.items = [];
     try {
       if (!fs.existsSync(this.qDir)) fs.mkdirSync(this.qDir, { recursive: true });
-    } catch (e) { /* Lanzamiento de carpeta */ }
+    } catch (e) { /* error de directorio */ }
     this.load();
   }
 
@@ -35,21 +45,18 @@ class Quarantine {
       const id = "q_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
       const destDir = path.join(this.qDir, id);
       fs.mkdirSync(destDir, { recursive: true });
-      const fileName = path.basename(filePath) || "archivo";
-      const destFile = path.join(destDir, fileName);
+      const rawFileName = path.basename(filePath) || "archivo";
+      const destFile = path.join(destDir, `${rawFileName}.qbin`);
 
       let moved = false;
       try {
-        fs.copyFileSync(filePath, destFile);
+        const fileData = fs.readFileSync(filePath);
+        const encrypted = xorBuffer(fileData);
+        fs.writeFileSync(destFile, encrypted);
         fs.unlinkSync(filePath);
         moved = true;
       } catch (e) {
-        try {
-          fs.renameSync(filePath, destFile);
-          moved = true;
-        } catch (e2) {
-          // no se pudo mover (archivo en uso) -> dejar copia aislada
-        }
+        // En caso de fallo de lectura/escritura (archivo en uso)
       }
 
       const item = {
@@ -58,6 +65,7 @@ class Quarantine {
         storedPath: destFile,
         threat: threat || {},
         time: new Date().toISOString(),
+        encrypted: true,
         moved
       };
       this.items.unshift(item);
@@ -77,9 +85,16 @@ class Quarantine {
       const item = this.items.find(i => i.id === id);
       if (!item) return { ok: false, error: "No encontrado" };
       if (!fs.existsSync(item.storedPath)) return { ok: false, error: "Archivo aislado no existe" };
+
       const dir = path.dirname(item.originalPath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.copyFileSync(item.storedPath, item.originalPath);
+
+      const storedData = fs.readFileSync(item.storedPath);
+      const restoredData = item.encrypted ? xorBuffer(storedData) : storedData;
+      fs.writeFileSync(item.originalPath, restoredData);
+
+      try { fs.rmSync(path.dirname(item.storedPath), { recursive: true, force: true }); } catch (e) { /* ignorar */ }
+
       this.items = this.items.filter(i => i.id !== id);
       this.save();
       return { ok: true };

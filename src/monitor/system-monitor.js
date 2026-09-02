@@ -1,48 +1,90 @@
 "use strict";
 const os = require("os");
-const { runPowerShell } = require("../utils/ps");
+const fs = require("fs");
 
 class SystemMonitor {
+  constructor() {
+    this.prevCpuTimes = this.getSystemCpuTimes();
+  }
+
+  getSystemCpuTimes() {
+    const cpus = os.cpus();
+    let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+    if (!cpus || !cpus.length) return { idle: 0, total: 0 };
+
+    for (const cpu of cpus) {
+      user += cpu.times.user;
+      nice += cpu.times.nice || 0;
+      sys += cpu.times.sys;
+      idle += cpu.times.idle;
+      irq += cpu.times.irq || 0;
+    }
+    const total = user + nice + sys + idle + irq;
+    return { idle, total };
+  }
+
+  getCpuUsagePercent() {
+    const curr = this.getSystemCpuTimes();
+    const prev = this.prevCpuTimes;
+    this.prevCpuTimes = curr;
+
+    const idleDelta = curr.idle - prev.idle;
+    const totalDelta = curr.total - prev.total;
+
+    if (totalDelta <= 0) return 0;
+    const usedPercent = Math.max(0, Math.min(100, Math.round(((totalDelta - idleDelta) / totalDelta) * 100)));
+    return usedPercent;
+  }
+
+  getDisks() {
+    const disks = [];
+    const drives = ["C", "D", "E", "F", "G", "H", "Z"];
+    for (const driveLetter of drives) {
+      const rootPath = `${driveLetter}:\\`;
+      try {
+        if (fs.existsSync(rootPath)) {
+          const stats = fs.statfsSync(rootPath);
+          const size = stats.blocks * stats.bsize;
+          const free = stats.bfree * stats.bsize;
+          if (size > 0) {
+            const percent = Math.round(((size - free) / size) * 100);
+            disks.push({
+              drive: `${driveLetter}:`,
+              label: driveLetter === "C" ? "Disco local" : `Unidad ${driveLetter}`,
+              size,
+              free,
+              percent
+            });
+          }
+        }
+      } catch (e) {
+        // Drive missing or restricted
+      }
+    }
+    return disks;
+  }
+
   async snapshot() {
-    let cpu = null;
-    let mem = null;
-    let disks = [];
+    const cpu = this.getCpuUsagePercent();
 
-    const c = await runPowerShell("Get-CimInstance Win32_Processor | Select-Object LoadPercentage | ConvertTo-Json -Compress");
-    if (c) {
-      try {
-        const data = JSON.parse(c);
-        cpu = Array.isArray(data) ? data.reduce((s, x) => s + (x.LoadPercentage || 0), 0) / data.length : (data.LoadPercentage || 0);
-      } catch (e) { cpu = null; }
-    }
+    const totalMemBytes = os.totalmem();
+    const freeMemBytes = os.freemem();
+    const totalKb = Math.round(totalMemBytes / 1024);
+    const freeKb = Math.round(freeMemBytes / 1024);
+    const usedKb = totalKb - freeKb;
+    const memPercent = totalKb > 0 ? Math.round((usedKb / totalKb) * 100) : 0;
 
-    const m = await runPowerShell("Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize,FreePhysicalMemory | ConvertTo-Json -Compress");
-    if (m) {
-      try {
-        const d = JSON.parse(m);
-        const total = (d.TotalVisibleMemorySize || os.totalmem() / 1024);
-        const free = (d.FreePhysicalMemory || os.freemem() / 1024);
-        mem = { totalKb: total, freeKb: free, usedKb: total - free, percent: total > 0 ? Math.round(((total - free) / total) * 100) : 0 };
-      } catch (e) { mem = null; }
-    }
+    const mem = {
+      totalKb,
+      freeKb,
+      usedKb,
+      percent: memPercent
+    };
 
-    const ds = await runPowerShell("Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3' | Select-Object DeviceID,Size,FreeSpace,VolumeName | ConvertTo-Json -Compress");
-    if (ds) {
-      try {
-        const arr = JSON.parse(ds);
-        const list = Array.isArray(arr) ? arr : [arr];
-        disks = list.filter(x => x && x.Size).map(x => ({
-          drive: x.DeviceID,
-          label: x.VolumeName || "",
-          size: x.Size,
-          free: x.FreeSpace,
-          percent: x.Size > 0 ? Math.round(((x.Size - x.FreeSpace) / x.Size) * 100) : 0
-        }));
-      } catch (e) { disks = []; }
-    }
+    const disks = this.getDisks();
 
     return {
-      cpu: cpu == null ? 0 : Math.round(cpu),
+      cpu,
       mem,
       disks,
       uptime: os.uptime(),
