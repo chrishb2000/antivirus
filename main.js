@@ -424,6 +424,43 @@ function registerIpc() {
 
   ipcMain.handle("system:metrics", () => SystemMonitor.snapshot());
   ipcMain.handle("processes:list", () => ProcessMonitor.list());
+  ipcMain.handle("processes:kill", async (e, pid) => {
+    try {
+      if (!pid) return { ok: false, error: "PID inválido" };
+      const { runExe } = require("./src/utils/ps");
+      const res = await runExe("taskkill.exe", ["/F", "/PID", String(pid)]);
+      return res.ok ? { ok: true } : { ok: false, error: res.error || "No se pudo terminar el proceso" };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+  ipcMain.handle("file:delete", async (e, filePath) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "Archivo no encontrado" };
+      fs.unlinkSync(filePath);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+  ipcMain.handle("file:quarantine", async (e, filePath) => {
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "Archivo no encontrado" };
+      const threat = {
+        type: "file",
+        path: filePath,
+        name: path.basename(filePath),
+        severity: "high",
+        source: "user-action",
+        description: "Aislamiento manual por el usuario",
+        time: new Date().toISOString()
+      };
+      const q = await engine.quarantine.add(filePath, threat);
+      return q ? { ok: true } : { ok: false, error: "No se pudo aislar en cuarentena" };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
   ipcMain.handle("network:connections", () => NetworkMonitor.list());
 
   ipcMain.handle("scan:start", (e, { mode, root }) => startScan(mode, root));

@@ -38,15 +38,37 @@ window.AV = window.AV || {};
           .slice(0, 6)
           .map((t) => {
             const cls = t.severity === "critical" || t.severity === "high" ? "risk-high" : t.severity === "medium" ? "risk-medium" : "risk-none";
-            return `<div class="list-item">
-              <div class="li-main">
+            const canQuarantine = t.path && t.action !== "quarantined";
+            return `<div class="list-item" style="flex-wrap:wrap; gap:6px">
+              <div class="li-main" style="min-width:200px">
                 <div class="li-title">${t.name || t.description}</div>
                 <div class="li-sub">${AV.fmtDate(t.time)} - ${t.action || "flagged"}</div>
               </div>
               <span class="risk-tag ${cls}">${AV.riskLabel(t.severity)}</span>
+              ${canQuarantine ? `<button class="btn small danger" data-dact="quarantine" data-id="${t.id}" data-path="${t.path}">Cuarentena</button>` : ""}
             </div>`;
           })
           .join("");
+
+        AV.$$("[data-dact]", box).forEach((b) =>
+          b.addEventListener("click", async () => {
+            const path = b.dataset.path;
+            const id = b.dataset.id;
+            if (path) {
+              const r = await Aegis.invoke("file:quarantine", path);
+              if (r.ok) {
+                await Aegis.invoke("threats:resolve", id, "quarantined");
+                AV.toast("Amenaza aislada en cuarentena", "ok");
+              } else {
+                AV.toast(r.error || "No se pudo aislar", "danger");
+              }
+            } else {
+              await Aegis.invoke("threats:quarantineThreat", id);
+              AV.toast("Amenaza procesada", "ok");
+            }
+            this.renderThreats();
+          })
+        );
       });
     },
 
@@ -81,20 +103,20 @@ window.AV = window.AV || {};
     },
 
     renderMetrics(m) {
-const rt = AV.state.metrics || {};
-    const memPct = m.memPercent != null ? m.memPercent : (m.mem ? m.mem.percent : (rt.memPercent || 0));
-    const procs = m.processCount != null ? m.processCount : (rt.processCount != null ? rt.processCount : "--");
-    const conns = m.connectionCount != null ? m.connectionCount : (rt.connectionCount != null ? rt.connectionCount : "--");
+      const rt = AV.state.metrics || {};
+      const memPct = m.memPercent != null ? m.memPercent : (m.mem ? m.mem.percent : (rt.memPercent || 0));
+      const procs = m.processCount != null ? m.processCount : (rt.processCount != null ? rt.processCount : "--");
+      const conns = m.connectionCount != null ? m.connectionCount : (rt.connectionCount != null ? rt.connectionCount : "--");
 
-    $("#statCpu").textContent = (m.cpu == null ? 0 : m.cpu) + "%";
-    $("#statMem").textContent = memPct + "%";
-    $("#statProcs").textContent = procs;
-    $("#statConns").textContent = conns;
+      $("#statCpu").textContent = (m.cpu == null ? 0 : m.cpu) + "%";
+      $("#statMem").textContent = memPct + "%";
+      $("#statProcs").textContent = procs;
+      $("#statConns").textContent = conns;
 
-    if (memPct > 85) $("#statMem").style.color = "var(--danger)";
-    else $("#statMem").style.color = "";
-    if (m.cpu > 90) $("#statCpu").style.color = "var(--danger)";
-    else $("#statCpu").style.color = "";
+      if (memPct > 85) $("#statMem").style.color = "var(--danger)";
+      else $("#statMem").style.color = "";
+      if (m.cpu > 90) $("#statCpu").style.color = "var(--danger)";
+      else $("#statCpu").style.color = "";
 
       const disks = m.disks || [];
       $("#diskCount").textContent = disks.length;

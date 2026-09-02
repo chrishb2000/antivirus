@@ -59,11 +59,41 @@ window.AV = window.AV || {};
             <td title="${(p.path || "").replace(/"/g, "")}">${p.name}</td>
             <td>${AV.fmtBytes(p.mem)}</td>
             <td><span class="risk-tag ${cls}">${p.risk.label}</span></td>
+            <td>
+              <button class="btn small danger" data-pact="kill" data-pid="${p.pid}" data-name="${p.name}">Detener (Kill)</button>
+              ${p.path ? `<button class="btn small primary" data-pact="ai" data-path="${p.path}">Analizar IA</button>` : ""}
+            </td>
           </tr>`;
         })
         .join("");
+
+      AV.$$("[data-pact]", tb).forEach((b) =>
+        b.addEventListener("click", async () => {
+          const act = b.dataset.pact;
+          if (act === "kill") {
+            const pid = parseInt(b.dataset.pid, 10);
+            const name = b.dataset.name || "proceso";
+            const r = await Aegis.invoke("processes:kill", pid);
+            if (r.ok) {
+              AV.toast(`Proceso ${name} (PID ${pid}) terminado correctamente`, "ok");
+            } else {
+              AV.toast(r.error || "No se pudo terminar el proceso", "danger");
+            }
+            this.render();
+          } else if (act === "ai") {
+            const pth = b.dataset.path;
+            if (!pth) return AV.toast("Sin ruta de archivo disponible", "warn");
+            AV.toast("Enviando ejecutable a análisis IA...", "ok");
+            const res = await Aegis.invoke("ai:analyzeFile", pth);
+            if (res && res.ai) {
+              AV.toast(`Veredicto IA: ${res.ai.raw ? res.ai.raw.verdict : "Analizado"}`, "ok");
+            }
+          }
+        })
+      );
+
       const empty = AV.$("#procTable").innerHTML;
-      if (!empty) AV.$("#procTable").innerHTML = '<tr><td colspan="4" class="muted">Sin datos</td></tr>';
+      if (!empty) AV.$("#procTable").innerHTML = '<tr><td colspan="5" class="muted">Sin datos</td></tr>';
     },
 
     renderConns(conns) {

@@ -77,16 +77,57 @@ window.AV = window.AV || {};
         box.innerHTML = '<div class="muted">Sin amenazas detectadas en este escaneo.</div>';
         return;
       }
-      box.innerHTML = results.map((t) => {
+      box.innerHTML = results.map((t, index) => {
         const cls = t.severity === "critical" || t.severity === "high" ? "risk-high" : "risk-medium";
-        return `<div class="list-item">
-          <div class="li-main">
-            <div class="li-title">${t.name}</div>
-            <div class="li-sub">${t.path} - ${t.detail || ""}</div>
+        const handled = t._handled ? `<span class="muted small">(${t._handled})</span>` : "";
+        return `<div class="list-item" style="flex-wrap:wrap; gap:8px">
+          <div class="li-main" style="min-width:240px">
+            <div class="li-title">${t.name} ${handled}</div>
+            <div class="li-sub">${t.path || "Ruta no disponible"} - ${t.detail || ""}</div>
           </div>
           <span class="risk-tag ${cls}">${AV.riskLabel(t.severity)}</span>
+          <div class="li-actions" style="display:flex; gap:6px; flex-wrap:wrap">
+            <button class="btn small danger" data-act="quarantine" data-idx="${index}">Cuarentena</button>
+            <button class="btn small danger" data-act="delete" data-idx="${index}">Eliminar</button>
+            <button class="btn small primary" data-act="ai" data-idx="${index}">Analizar con IA</button>
+          </div>
         </div>`;
       }).join("");
+
+      AV.$$("[data-act]", box).forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const act = btn.dataset.act;
+          const idx = parseInt(btn.dataset.idx, 10);
+          const t = results[idx];
+          if (!t || !t.path) return AV.toast("Ruta de archivo no disponible", "warn");
+
+          if (act === "quarantine") {
+            const r = await Aegis.invoke("file:quarantine", t.path);
+            if (r.ok) {
+              t._handled = "Aislado en cuarentena";
+              AV.toast(`Archivo ${t.name} movido a cuarentena`, "ok");
+            } else {
+              AV.toast(r.error || "No se pudo mover a cuarentena", "danger");
+            }
+            this.renderResults(s);
+          } else if (act === "delete") {
+            const r = await Aegis.invoke("file:delete", t.path);
+            if (r.ok) {
+              results.splice(idx, 1);
+              AV.toast(`Archivo ${t.name} eliminado`, "ok");
+            } else {
+              AV.toast(r.error || "No se pudo eliminar el archivo", "danger");
+            }
+            this.renderResults(s);
+          } else if (act === "ai") {
+            AV.toast(`Enviando ${t.name} a análisis de IA...`, "ok");
+            const res = await Aegis.invoke("ai:analyzeFile", t.path);
+            if (res && res.ai) {
+              AV.toast(`Veredicto IA: ${res.ai.raw ? res.ai.raw.verdict : "Analizado"}`, "ok");
+            }
+          }
+        });
+      });
     }
   };
 })();
