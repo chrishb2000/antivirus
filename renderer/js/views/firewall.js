@@ -28,8 +28,13 @@ window.AV = window.AV || {};
 
     AV.$$("[data-name]", box).forEach((b) =>
       b.addEventListener("click", async () => {
+        const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
+        if (!info.isAdmin) {
+          AV.toast("⚠️ Requiere permisos de administrador. Usa el botón 'Reiniciar como administrador'.", "warn");
+          return;
+        }
         const r = await Aegis.invoke("firewall:remove", b.dataset.name);
-        AV.toast(r.ok ? "Regla eliminada" : "Error: " + (r.error || ""), r.ok ? "ok" : "danger");
+        AV.toast(r.ok ? "Regla eliminada" : (r.error || "Error al eliminar"), r.ok ? "ok" : "danger");
         renderList();
       })
     );
@@ -44,30 +49,58 @@ window.AV = window.AV || {};
     },
 
     async show() {
+      const info = AV.state.appInfo = await Aegis.invoke("app:info");
       const st = await Aegis.invoke("firewall:status");
       const el = $("#fwStatus");
       if (st && st.ok) {
         el.textContent = st.enabled === null ? "Mixto" : st.enabled ? "ON" : "OFF";
         el.className = "badge " + (st.enabled ? "" : "danger");
       } else {
-        el.textContent = "Sin permiso admin";
+        el.textContent = "Sin admin";
         el.className = "badge warn";
       }
+
       const adminNote = $("#fwAdminNote");
-      const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
-      adminNote.textContent = info.isAdmin
-        ? "Administrador: gestión completa de reglas."
-        : "Ejecuta la app como administrador para gestionar reglas (pestaña Ajustes).";
+      if (info.isAdmin) {
+        adminNote.innerHTML = '<span style="color:#22c55e; font-weight:500">✓ Modo Administrador: Gestión completa de reglas activa.</span>';
+      } else {
+        adminNote.innerHTML = `<div style="margin-top:10px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); padding:12px; border-radius:8px">
+          <div style="color:#ef4444; font-weight:bold; margin-bottom:4px">⚠️ Sin permisos de administrador</div>
+          <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px">Windows requiere elevación de administrador para activar/desactivar el Firewall o crear reglas.</div>
+          <button class="btn primary small" id="btnFwElevate">🛡️ Reiniciar como administrador</button>
+        </div>`;
+        const btnElevate = $("#btnFwElevate");
+        if (btnElevate) {
+          btnElevate.addEventListener("click", async () => {
+            await Aegis.invoke("app:elevate");
+            AV.toast("Reiniciando con permisos de administrador...", "ok");
+          });
+        }
+      }
       renderList();
     },
 
     async setFirewall(on) {
+      const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
+      if (!info.isAdmin) {
+        AV.toast("⚠️ Debes reiniciar la aplicación como administrador para modificar el Firewall.", "warn");
+        return;
+      }
       const r = await Aegis.invoke("firewall:set", on);
-      AV.toast(r.ok ? "Firewall " + (on ? "activado" : "desactivado") : "Error: " + r.error, r.ok ? "ok" : "danger");
+      if (r.ok) {
+        AV.toast("Firewall " + (on ? "activado" : "desactivado"), "ok");
+      } else {
+        AV.toast(r.error || "Error al cambiar el estado del Firewall", "danger");
+      }
       this.show();
     },
 
     async addRule() {
+      const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
+      if (!info.isAdmin) {
+        AV.toast("⚠️ Debes reiniciar la aplicación como administrador para crear reglas de Firewall.", "warn");
+        return;
+      }
       const data = {
         name: $("#ruleName").value,
         dir: $("#ruleDir").value,
@@ -80,11 +113,11 @@ window.AV = window.AV || {};
       if (!data.name) return AV.toast("Pon un nombre para la regla", "warn");
       const r = await Aegis.invoke("firewall:add", data);
       if (r.ok) {
-        AV.toast("Regla creada correctamente (como administrador)", "ok");
+        AV.toast("Regla creada correctamente", "ok");
         $("#ruleName").value = ""; $("#rulePort").value = ""; $("#ruleIp").value = ""; $("#ruleProgram").value = "";
         renderList();
       } else {
-        AV.toast("Error al crear regla: " + (r.error || ""), "danger");
+        AV.toast(r.error || "Error al crear regla de Firewall", "danger");
       }
     }
   };
