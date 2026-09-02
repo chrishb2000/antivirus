@@ -304,10 +304,11 @@ function push(channel, payload) {
 // ---------------------------------------------------------------------------
 function createWindow() {
   win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: 1200,
+    height: 760,
     minWidth: 960,
     minHeight: 640,
+    center: true,
     autoHideMenuBar: true,
     backgroundColor: "#0b1220",
     show: false,
@@ -320,7 +321,6 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);
-  win.maximize();
   win.once("ready-to-show", () => win.show());
   if (process.argv.includes("--smoke-test")) {
     win.webContents.on("console-message", (e, level, message, line, sourceId) => {
