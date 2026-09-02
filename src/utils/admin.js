@@ -15,9 +15,14 @@ function isAdmin() {
 function elevate() {
   return new Promise((resolve) => {
     const execPath = process.execPath;
-    const args = (process.argv.slice(1) || []).join(" ");
-    const psScript = `Start-Process -FilePath '${execPath}' -ArgumentList '${args}' -Verb RunAs`;
-    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", psScript], { timeout: 10000, windowsHide: true }, (err) => {
+    const isDev = process.argv.includes("--dev") || process.defaultApp;
+    let command = "";
+    if (isDev) {
+      command = `Start-Process -FilePath "${execPath}" -ArgumentList ". --dev" -Verb RunAs`;
+    } else {
+      command = `Start-Process -FilePath "${execPath}" -Verb RunAs`;
+    }
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", command], { timeout: 10000, windowsHide: true }, (err) => {
       resolve(!err);
     });
   });

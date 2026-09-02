@@ -30,7 +30,8 @@ window.AV = window.AV || {};
       b.addEventListener("click", async () => {
         const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
         if (!info.isAdmin) {
-          AV.toast("⚠️ Requiere permisos de administrador. Usa el botón 'Reiniciar como administrador'.", "warn");
+          AV.toast("Reiniciando la aplicación con permisos de administrador...", "ok");
+          await Aegis.invoke("app:elevate");
           return;
         }
         const r = await Aegis.invoke("firewall:remove", b.dataset.name);
@@ -72,8 +73,8 @@ window.AV = window.AV || {};
         const btnElevate = $("#btnFwElevate");
         if (btnElevate) {
           btnElevate.addEventListener("click", async () => {
-            await Aegis.invoke("app:elevate");
             AV.toast("Reiniciando con permisos de administrador...", "ok");
+            await Aegis.invoke("app:elevate");
           });
         }
       }
@@ -83,7 +84,8 @@ window.AV = window.AV || {};
     async setFirewall(on) {
       const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
       if (!info.isAdmin) {
-        AV.toast("⚠️ Debes reiniciar la aplicación como administrador para modificar el Firewall.", "warn");
+        AV.toast("Reiniciando aplicación como administrador para gestionar el Firewall...", "ok");
+        await Aegis.invoke("app:elevate");
         return;
       }
       const r = await Aegis.invoke("firewall:set", on);
@@ -98,7 +100,8 @@ window.AV = window.AV || {};
     async addRule() {
       const info = AV.state.appInfo || (AV.state.appInfo = await Aegis.invoke("app:info"));
       if (!info.isAdmin) {
-        AV.toast("⚠️ Debes reiniciar la aplicación como administrador para crear reglas de Firewall.", "warn");
+        AV.toast("Reiniciando aplicación como administrador para crear reglas...", "ok");
+        await Aegis.invoke("app:elevate");
         return;
       }
       const data = {

@@ -383,8 +383,14 @@ function registerIpc() {
   }));
 
   ipcMain.handle("app:elevate", async () => {
-    await elevate();
-    return { ok: true };
+    const ok = await elevate();
+    if (ok) {
+      setTimeout(() => {
+        isQuitting = true;
+        app.quit();
+      }, 800);
+    }
+    return { ok };
   });
 
   ipcMain.handle("dialog:pickFolder", async () => {
