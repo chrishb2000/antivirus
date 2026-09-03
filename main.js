@@ -33,6 +33,19 @@ let tray = null;
 let currentScan = null;
 let isQuitting = false;
 
+function syncAutoStart() {
+  if (process.platform === "win32" && !process.env.PORTABLE_EXECUTABLE_DIR) {
+    try {
+      const autoStart = engine ? (engine.config.get().autoStart !== false) : true;
+      app.setLoginItemSettings({
+        openAtLogin: autoStart,
+        path: process.execPath,
+        args: ["--autostart"]
+      });
+    } catch (e) { /* ignorar */ }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Bandeja del sistema (icono junto a volumen/wifi)
 // ---------------------------------------------------------------------------
@@ -321,7 +334,10 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);
-  win.once("ready-to-show", () => win.show());
+  const isAutoStart = process.argv.includes("--autostart") || process.argv.includes("--hidden");
+  win.once("ready-to-show", () => {
+    if (!isAutoStart) win.show();
+  });
   if (process.argv.includes("--smoke-test")) {
     win.webContents.on("console-message", (e, level, message, line, sourceId) => {
       console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
@@ -415,6 +431,9 @@ function registerIpc() {
     }
     if (patch && "watchedFolders" in patch) {
       engine.watcher.start(engine.config.resolveWatched());
+    }
+    if (patch && "autoStart" in patch) {
+      syncAutoStart();
     }
     if (before.aiKeys && patch && patch.aiKeys) {
       engine.config.save();
@@ -570,6 +589,7 @@ app.whenReady().then(() => {
   }
   engine.scheduler.start();
   registerIpc();
+  syncAutoStart();
   createWindow();
   createTray();
 

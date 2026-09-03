@@ -82,6 +82,7 @@ window.AV = window.AV || {};
   AV.views.settings = {
     async init() {
       const cfg = await currentCfg();
+      $("#cfgAutoStart").checked = cfg.autoStart !== false;
       $("#cfgRealtime").checked = !!cfg.realtime;
       $("#cfgAutoQ").checked = !!cfg.autoQuarantine;
       $("#cfgAutoBlock").checked = !!cfg.autoBlockConnections;
@@ -90,6 +91,7 @@ window.AV = window.AV || {};
       $("#cfgAiEnabled").checked = !!cfg.aiEnabled;
       $("#cfgVtKey").value = cfg.virustotalKey || "";
 
+      bindToggle("#cfgAutoStart", "autoStart");
       bindToggle("#cfgRealtime", "realtime");
       bindToggle("#cfgAutoQ", "autoQuarantine");
       bindToggle("#cfgAutoBlock", "autoBlockConnections");
@@ -122,6 +124,7 @@ window.AV = window.AV || {};
     async show() {
       AV.state.config = await Aegis.invoke("config:get");
       const cfg = AV.state.config;
+      $("#cfgAutoStart").checked = cfg.autoStart !== false;
       $("#cfgRealtime").checked = !!cfg.realtime;
       $("#cfgAutoQ").checked = !!cfg.autoQuarantine;
       $("#cfgAutoBlock").checked = !!cfg.autoBlockConnections;
