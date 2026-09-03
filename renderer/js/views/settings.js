@@ -89,7 +89,6 @@ window.AV = window.AV || {};
       $("#cfgEmailScan").checked = !!cfg.emailScan;
       $("#cfgNotify").checked = !!cfg.notifications;
       $("#cfgAiEnabled").checked = !!cfg.aiEnabled;
-      $("#cfgVtKey").value = cfg.virustotalKey || "";
 
       bindToggle("#cfgAutoStart", "autoStart");
       bindToggle("#cfgRealtime", "realtime");
@@ -98,11 +97,6 @@ window.AV = window.AV || {};
       bindToggle("#cfgEmailScan", "emailScan");
       bindToggle("#cfgNotify", "notifications");
       bindToggle("#cfgAiEnabled", "aiEnabled");
-
-      $("#cfgVtKey").addEventListener("change", async (e) => {
-        AV.state.config = await Aegis.invoke("config:set", { virustotalKey: e.target.value });
-        AV.toast("Clave VirusTotal guardada", "ok");
-      });
 
       $("#btnAddExclusion").addEventListener("click", async () => {
         const dir = await Aegis.invoke("dialog:pickFolder");
@@ -131,7 +125,6 @@ window.AV = window.AV || {};
       $("#cfgEmailScan").checked = !!cfg.emailScan;
       $("#cfgNotify").checked = !!cfg.notifications;
       $("#cfgAiEnabled").checked = !!cfg.aiEnabled;
-      if ($("#cfgVtKey").value !== (cfg.virustotalKey || "")) $("#cfgVtKey").value = cfg.virustotalKey || "";
       renderLists();
     }
   };

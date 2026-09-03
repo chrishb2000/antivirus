@@ -67,51 +67,6 @@ class Scanner {
     return cfgExts.includes(ext);
   }
 
-  async vtLookup(sha256) {
-    const key = this.engine.config.get().virustotalKey;
-    if (!key || !sha256) return null;
-    const now = Date.now();
-    if (now < this.vtCooldownUntil) return null;
-    this.vtCooldownUntil = now + 16000; // limite de API gratuita
-    return new Promise((resolve) => {
-      const url = `https://www.virustotal.com/api/v3/files/${sha256}`;
-      const req = https.get(url, {
-        headers: {
-          "x-apikey": key,
-          "User-Agent": "aegis-ai-antivirus/1.0",
-          "Accept": "application/json"
-        },
-        timeout: 15000
-      }, (res) => {
-        const chunks = [];
-        res.on("data", (c) => chunks.push(c));
-        res.on("end", () => {
-          try {
-            const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-            const stats = (data.data && data.data.attributes && data.data.attributes.last_analysis_stats) || null;
-            if (stats) {
-              const malicious = (stats.malicious || 0) + (stats.suspicious || 0);
-              const total = (stats.harmless || 0) + (stats.malicious || 0) + (stats.suspicious || 0) + (stats.undetected || 0) + (stats.timeout || 0);
-              resolve({
-                found: true,
-                malicious,
-                total: total || 0,
-                harmless: stats.harmless || 0,
-                link: data.data.links ? data.data.links.self : ""
-              });
-            } else {
-              resolve(null); // hash no en la base VT
-            }
-          } catch (e) {
-            resolve(null);
-          }
-        });
-      });
-      req.on("error", () => resolve(null));
-      req.on("timeout", () => { req.destroy(); resolve(null); });
-    });
-  }
-
   async checkFile(filePath) {
     const local = await sig.checkFile(filePath);
     if (local && local.found) {
@@ -125,26 +80,6 @@ class Scanner {
         sha256: local.sha256,
         hashHit: true
       };
-    }
-
-    // Comprobacion reputacional en la nube (VirusTotal)
-    if (this.engine.config.get().virustotalKey) {
-      const hashes = local || (await hashFile(filePath));
-      if (hashes && hashes.sha256) {
-        const vt = await this.vtLookup(hashes.sha256);
-        if (vt && vt.found && vt.malicious > 0) {
-          return {
-            danger: true,
-            source: "cloud",
-            low: vt.malicious >= 10 ? "critical" : vt.malicious >= 3 ? "high" : "medium",
-            name: `Detectado por ${vt.malicious} motores de VirusTotal`,
-            family: "Cloud-Reputation",
-            detail: `${vt.malicious} de ${vt.total} motores lo marcan como malicioso`,
-            sha256: hashes.sha256,
-            vt
-          };
-        }
-      }
     }
     return { danger: false };
   }

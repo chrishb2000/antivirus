@@ -13,7 +13,6 @@ const DEFAULTS = {
   aiProvider: "openai",
   aiKeys: { openai: "", gemini: "", claude: "", perplexity: "" },
   aiModel: "",
-  virustotalKey: "",
   notifications: true,
   theme: "dark",
   watchedFolders: [],

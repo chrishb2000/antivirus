@@ -192,18 +192,18 @@ function buildEngine() {
           verdict: aiResult.raw ? aiResult.raw.verdict : null,
           confidence: aiResult.raw ? aiResult.raw.confidence : null,
           summary: aiResult.raw ? aiResult.raw.summary : null,
+          solution: aiResult.raw ? aiResult.raw.solution : null,
           recommendation: aiResult.raw ? aiResult.raw.recommendation : null,
           reasons: aiResult.raw ? aiResult.raw.reasons : []
         };
-        // Accion recomendada por la IA
+        // Accion recomendada por la IA: si dictamina malware o recomienda cuarentena -> aislar de inmediato
         if (aiResult.raw) {
           const rec = String(aiResult.raw.recommendation || "").toLowerCase();
-          if ((rec === "quarantine" || rec === "delete") && cfg.autoQuarantine) {
-            if (threat.path && fs.existsSync(threat.path)) {
-              const q = await quarantine.add(threat.path, threat);
-              if (q) action = q.moved ? "quarantined" : "quarantined-copy";
-            }
-          } else if (rec === "block" && threat.type === "network" && cfg.autoBlockConnections) {
+          const verd = String(aiResult.raw.verdict || "").toLowerCase();
+          if ((rec === "quarantine" || rec === "delete" || verd === "malware" || cfg.autoQuarantine) && threat.path && fs.existsSync(threat.path)) {
+            const q = await quarantine.add(threat.path, threat);
+            if (q) action = q.moved ? "quarantined" : "quarantined-copy";
+          } else if ((rec === "block" || verd === "malware") && threat.type === "network") {
             if (threat.path) {
               const r = await Firewall.blockProgram(threat.path);
               if (r.ok) action = "blocked";
