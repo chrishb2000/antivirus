@@ -42,6 +42,16 @@ function syncAutoStart() {
         path: process.execPath,
         args: ["--autostart"]
       });
+
+      const exePath = process.execPath;
+      const { runExe } = require("./src/utils/ps");
+      if (autoStart) {
+        runExe("reg.exe", ["add", "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "/v", "Aegis AI Antivirus", "/t", "REG_SZ", "/d", `"${exePath}" --autostart`, "/f"]);
+        runExe("reg.exe", ["add", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "/v", "Aegis AI Antivirus", "/t", "REG_SZ", "/d", `"${exePath}" --autostart`, "/f"]);
+      } else {
+        runExe("reg.exe", ["delete", "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "/v", "Aegis AI Antivirus", "/f"]);
+        runExe("reg.exe", ["delete", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "/v", "Aegis AI Antivirus", "/f"]);
+      }
     } catch (e) { /* ignorar */ }
   }
 }
@@ -334,7 +344,8 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);
-  const isAutoStart = process.argv.includes("--autostart") || process.argv.includes("--hidden");
+  const loginSettings = app.getLoginItemSettings ? app.getLoginItemSettings() : {};
+  const isAutoStart = process.argv.includes("--autostart") || process.argv.includes("--hidden") || !!loginSettings.wasOpenedAtLogin;
   win.once("ready-to-show", () => {
     if (!isAutoStart) win.show();
   });
